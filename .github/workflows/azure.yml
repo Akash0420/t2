@@ -1,38 +1,30 @@
-name: Terraform Deployment
+name: Create Storage Account
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-      
-    - name: Azure Login
-      uses: azure/login@v1
+    - uses: actions/checkout@v3
+
+    - name: Login to Azure
+      uses: Azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v1
-      with:
-        terraform_version: 1.0.0
-      
-    - name: Terraform Init
-      run: terraform init
-      
-    - name: Terraform Plan
-      run: terraform plan
-      
-    - name: Terraform Apply
+    - name: Configure Terraform
+      run: |
+        echo "ARM_CLIENT_ID=${{ secrets.AZURE_CLIENT_ID }}" >> .env
+        echo "ARM_CLIENT_SECRET=${{ secrets.AZURE_CLIENT_SECRET }}" >> .env
+        echo "ARM_TENANT_ID=${{ secrets.AZURE_TENANT_ID }}" >> .env
+        echo "TF_IN_AUTOMATION=true" >> .env
+
+    - name: Initialize Terraform
+      run: |
+        terraform init
+
+    - name: Apply Terraform configuration
       run: terraform apply -auto-approve
-      env:
-        ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
-        ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
-        ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
-        ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
